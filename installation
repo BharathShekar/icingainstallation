@@ -1,0 +1,73 @@
+#Update the System
+sudo yum update -y
+sudo yum install epel-release -y
+reboot
+#install Apache
+sudo yum install httpd -y
+sudo sed -i 's/^/#&/g' /etc/httpd/conf.d/welcome.conf
+sudo sed -i "s/Options Indexes FollowSymLinks/Options FollowSymLinks/" /etc/httpd/conf/httpd.conf
+sudo systemctl start httpd.service
+sudo systemctl enable httpd.service
+#Install MariaDB
+sudo yum install mariadb mariadb-server -y
+sudo systemctl start mariadb.service
+sudo systemctl enable mariadb.service
+sudo /usr/bin/mysql_secure_installation
+#Enter current password for root (enter for none): Enter
+#Set root password? [Y/n]: Y
+#New password: <your-password>
+#Re-enter new password: <your-password>
+#Remove anonymous users? [Y/n]: Y
+#Disallow root login remotely? [Y/n]: Y
+#Remove test database and access to it? [Y/n]: Y
+#Reload privilege tables now? [Y/n]: Y
+#Create Database Icinga2
+sudo yum install icinga2-ido-mysql -y
+mysql -u root -p
+#copy below paste in database.
+#CREATE DATABASE icinga;
+#GRANT SELECT, INSERT, UPDATE, DELETE, DROP, CREATE VIEW, INDEX, EXECUTE ON icinga.* TO 'icinga'@'localhost' IDENTIFIED BY 'icinga';
+#FLUSH PRIVILEGES;
+#EXIT;
+#Import the Icinga2 IDO Schema
+mysql -u root -p icinga < /usr/share/icinga2-ido-mysql/schema/mysql.sql
+#Enable IDO SQL Module 
+sudo vi /etc/icinga2/features-available/ido-mysql.conf
+#Find these line
+#//user = "icinga"s 
+#//password = "icinga"
+#//host = "localhost"
+#//database = "icinga"
+#	Uncomment them as below and save the file
+# user = "icinga"
+# password = "icinga
+# host = "localhost"
+# database = "icinga”
+#Installing PHP 7.3 
+sudo yum install epel-release
+sudo rpm -Uvh http://rpms.famillecollet.com/enterprise/remi-release-7.rpm
+yum --enablerepo=remi-php73 install php
+yum --enablerepo=remi-php73 install php-xml php-soap php-xmlrpc php-mbstring php-json php-gd php-mcrypt
+yum --enablerepo=remi-php73 search php | grep php73
+systemctl start rh-php73-php-fpm.service systemctl enable rh-php73-php-fpm.service
+#Install Icinga2 and Plugins
+sudo yum install https://packages.icinga.com/epel/icinga-rpm-release-7-latest.noarch.rpm
+sudo yum install icinga2 nagios-plugins-all -y
+sudo systemctl start icinga2.service
+sudo systemctl enable icinga2.service
+sudo icinga2 feature list
+#Installing Icingaweb2 and Icingacli RPM Packages
+sudo icinga2 feature enable command
+sudo systemctl restart icinga2.service
+sudo usermod -a -G icingacmd apache
+id apache
+sudo yum install epel-release
+sudo yum install centos-release-scl
+sudo yum install icingaweb2 icingacli icingaweb2-selinux -y
+sudo icingacli setup config webserver apache --document-root /usr/share/icingaweb2/public
+sudo systemctl restart httpd.service
+#Modify Firewall rules 
+sudo firewall-cmd --zone=public --permanent --add-service=http
+sudo firewall-cmd --reload
+#Verify icinga web2 goto Browser - enter http://<your-server-ip>/icingaweb2/setup
+
