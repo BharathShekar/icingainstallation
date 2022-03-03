@@ -1,0 +1,64 @@
+#Disable firewall
+systemctl stop firewalld
+systemctl disable firewalld
+#Icinga2 Master setup
+sudo icinga2 node wizard
+#Please specify if this is a satellite setup ('n' installs a master setup) [Y/n]: N
+#Please specify the common name (CN) [icinga]: HOSTNAME OF SERVER(leave blank)
+#Master zone name [master]: leave blank
+#Do you want to specify additional global zones? [y/N]: n
+#Please specify the API bind host/port (optional): LEAVE BLANK
+#Bind Host []: LEAVE BLANK
+#Bind Port []: LEAVE BLANK
+#Do you want to disable the inclusion of the conf.d directory [Y/n]: n
+sudo systemctl restart icinga2
+#icinga2 pki ticket --cn 'NODE_NAME(salve/client)'
+#When we want to add other hosts just we need to create ticket, using hostname, with above command.
+#Icinga2 client/slave setup.
+#1st we need to install icinga2 in host system.
+#Step 1: Update the system
+sudo yum install epel-release -y
+sudo yum update -y
+sudo shutdown -r now
+#Step 2: Install Apache
+sudo yum install httpd -y
+#Disable the pre-set Apache welcome page:
+sudo sed -i 's/^/#&/g' /etc/httpd/conf.d/welcome.conf
+sudo systemctl start httpd.service
+sudo systemctl enable httpd.service
+#Step 3: Install Icinga 2 and Its Plugins
+sudo yum install https://packages.icinga.com/epel/icinga-rpm-release-7-latest.noarch.rpm
+sudo yum install icinga2 nagios-plugins-all –y
+sudo systemctl start icinga2.service
+sudo systemctl enable icinga2.service
+#step 4: Run node wizard
+sudo icinga2 node wizard
+#Please specify if this is a satellite setup ('n' installs a master setup) [Y/n]: Y
+#Please specify the common name (CN) [localhost.localdomain]: LEAVE BLANK
+#Master Common Name (CN from your master setup): HOSTNAME OF MASTER
+#Do you want to establish a connection to the parent node? From this node [Y/n]: y
+#Master endpoint host (Your master's IP address or FQDN): MASTER IP
+#Master endpoint port [5665]: LEAVE BLANK
+#Add more master endpoints? [y/N]: n
+Please specify the master connection for CSR auto-signing (defaults to master endpoint host): LEAVE BLANK
+Host [10.25.32.120]: LEAVE BLANK
+Port [5665]: LEAVE BLANK
+#Add more master/satellite endpoints? [y/N]:n
+#Is this information correct? [y/N]: y
+#information/cli: Received trusted master certificate.
+
+#Please specify the request ticket generated on your Icinga 2 master.
+ #(Hint: # icinga2 pki ticket --cn 'web-2.example.com'):
+#above we need to paste the ticket which we generated in icinga2 master.
+#Please specify the API bind host/port (optional):
+#Bind Host []:
+#Bind Port []:
+#Accept config from parent node? [y/N]: y
+#Accept commands from parent node? [y/N]: y
+#Local zone name [client.emudhra.com]:
+#Parent zone name [master]: icinga.emudhra.com
+#Default global zones: global-templates director-global
+#Do you want to specify additional global zones? [y/N]: n
+#Do you want to disable the inclusion of the conf.d directory [Y/n]: y
+#vi /etc/icinga2/conf.d/hosts.conf
+#by using above command we can start to add hosts in icinga server.
